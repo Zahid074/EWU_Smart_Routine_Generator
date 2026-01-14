@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EWU Smart Routine Generator</title>
+    
+    <meta name="title" content="EWU Smart Routine Generator - Easily Generate Your Routine">
+    <meta name="description" content="Generate and visualize your East West University class schedule with our simple and modern smart routine builder tool.">
+    <meta name="keywords" content="EWU, East West University, Routine Builder, Schedule Maker, EWU Routine Generator">
+    <meta name="author" content="MD Zahid Hossain">
+
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://EWU_Smart_Routine_Generator.vercel.app/">
+    <meta property="og:title" content="EWU Smart Routine Generator">
+    <meta property="og:description" content="Auto-generate your EWU routine with course, section, time, and room info.">
+    <meta property="og:image" content="https://EWU_Smart_Routine_Generator.vercel.app/og-image.jpg">
+
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://EWU_Smart_Routine_Generator.vercel.app/">
+    <meta property="twitter:title" content="EWU Smart Routine Generator">
+    <meta property="twitter:description" content="Easily generate and visualize your EWU class schedule with our simple tool.">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <link rel="stylesheet" href="style.css">
+
+    <style>
+        /* প্রিন্ট করার সময় অপ্রয়োজনীয় অংশ বাদ দেওয়ার জন্য */
+        @media print {
+            .no-print { display: none !important; }
+            body { background: white !important; }
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #3b82f6;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body class="transition-colors duration-300 min-h-screen flex flex-col bg-slate-100 dark:bg-slate-950">
+    
+    <div class="fixed top-5 right-5 z-50 no-print">
+        <button onclick="toggleDarkMode()" id="theme-toggle" class="bg-white/80 dark:bg-slate-800 p-3 rounded-full shadow-lg backdrop-blur-md border border-slate-200 dark:border-slate-700 hover:scale-110 transition-transform">
+            <span id="theme-icon">🌙</span>
+        </button>
+    </div>
+
+    <main class="flex-grow p-4 md:p-10">
+        <div class="max-w-7xl mx-auto relative z-10">
+            <div id="upload-box" class="bg-white/80 dark:bg-slate-900/80 backdrop-blur-lg p-16 rounded-[2rem] shadow-2xl border-4 border-dashed border-blue-400 dark:border-blue-600 text-center mb-10 no-print hover:border-blue-500 transition-colors">
+                <input type="file" id="fileInput" class="hidden" accept=".xlsx, .xls, .csv">
+                <label for="fileInput" class="cursor-pointer group">
+                    <div class="text-blue-600 dark:text-blue-400 mb-4 font-black text-4xl uppercase tracking-tight">Upload Advising Slip</div>
+                    <p class="text-slate-600 dark:text-slate-400 font-medium italic">Upload your Advising Slip in Excel format to generate the routine</p>
+                </label>
+            </div>
+
+            <div id="routineContainer" class="hidden bg-white/90 dark:bg-slate-900/95 backdrop-blur-xl p-6 md:p-10 rounded-[2.5rem] shadow-2xl border border-slate-200 dark:border-slate-800">
+                <div class="text-center mb-10">
+                    <h1 class="text-4xl md:text-6xl font-black text-blue-800 dark:text-blue-400 uppercase tracking-tighter">EAST WEST UNIVERSITY</h1>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10 text-xl font-bold text-slate-800 dark:text-slate-200 uppercase">
+                    <div class="bg-slate-50/50 dark:bg-slate-800/50 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm" id="disp-name">Name: </div>
+                    <div class="bg-slate-50/50 dark:bg-slate-800/50 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm" id="disp-id">ID#: </div>
+                    <div class="bg-slate-50/50 dark:bg-slate-800/50 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm text-blue-700 dark:text-blue-400" id="disp-semester">Semester: </div>
+                </div>
+
+                <div class="overflow-x-auto rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-inner">
+                    <table class="w-full routine-table border-collapse">
+                        <thead>
+                            <tr class="bg-blue-700 text-white" id="time-header">
+                                <th class="bg-blue-900 w-36 text-2xl p-6">Day / Time</th>
+                            </tr>
+                        </thead>
+                        <tbody id="routineBody" class="bg-white/50 dark:bg-slate-900/50 dark:text-slate-200"></tbody>
+                    </table>
+                </div>
+
+                <div class="mt-12 flex flex-wrap justify-center gap-6 no-print">
+                    <button onclick="openEditModal()" class="bg-amber-500 hover:bg-amber-600 text-white px-10 py-4 rounded-2xl font-black shadow-xl transition-all active:scale-95">EDIT / ADD COURSES</button>
+                    <button onclick="downloadAsImage()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-10 py-4 rounded-2xl font-black shadow-xl transition-all active:scale-95">DOWNLOAD PNG</button>
+                    <button onclick="window.print()" class="bg-blue-600 hover:bg-blue-700 text-white px-10 py-4 rounded-2xl font-black shadow-xl transition-all active:scale-95">PRINT</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="text-center py-10 no-print relative z-10 w-full">
+        <p class="text-slate-600 dark:text-white font-bold drop-shadow-lg">
+            &copy; 2026 | <span class="text-blue-500">MD Zahid Hossain</span>
+        </p>
+    </footer>
+
+    <div id="facultyModal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-md flex items-center justify-center hidden z-50 no-print">
+        <div class="bg-white dark:bg-slate-900 p-10 rounded-[3rem] w-full max-w-md shadow-2xl border border-slate-100 dark:border-slate-800">
+            <h3 class="text-3xl font-black mb-6 text-slate-800 dark:text-slate-100 tracking-tight text-center">Assign Faculty</h3>
+            <div id="facultyInputs" class="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar"></div>
+            <div class="flex gap-4 mt-10">
+                <button onclick="applyFaculty()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-5 rounded-2xl font-black shadow-lg">GENERATE</button>
+                <button onclick="applyFaculty(true)" class="flex-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:text-slate-400 py-5 rounded-2xl font-bold">SKIP</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="editModal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-md flex items-center justify-center hidden z-50 no-print">
+        <div class="bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] w-full max-w-4xl shadow-2xl border border-slate-100 dark:border-slate-800 flex flex-col max-h-[90vh]">
+            <h3 class="text-3xl font-black mb-6 text-slate-800 dark:text-slate-100 text-center uppercase tracking-tighter">Edit or Add Course Details</h3>
+            <div id="editCourseList" class="space-y-3 overflow-y-auto pr-2 custom-scrollbar flex-grow"></div>
+            <div class="mt-8 flex flex-wrap gap-4">
+                <button onclick="addNewCourseRow()" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-4 rounded-xl font-bold">+ Add New Slot</button>
+                <button onclick="saveEdits()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-xl font-bold">Update Routine</button>
+                <button onclick="document.getElementById('editModal').classList.add('hidden')" class="flex-1 bg-slate-200 dark:bg-slate-800 py-4 rounded-xl font-bold">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="script.js"></script>
+
+    <script>
+        function toggleDarkMode() {
+            document.documentElement.classList.toggle('dark');
+            const icon = document.getElementById('theme-icon');
+            if (document.documentElement.classList.contains('dark')) {
+                icon.innerText = '☀️';
+                localStorage.setItem('theme', 'dark');
+            } else {
+                icon.innerText = '🌙';
+                localStorage.setItem('theme', 'light');
+            }
+        }
+        if (localStorage.getItem('theme') === 'dark') {
+            document.documentElement.classList.add('dark');
+            document.getElementById('theme-icon').innerText = '☀️';
+        }
+    </script>
+</body>
+</html>

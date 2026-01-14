@@ -1,0 +1,122 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
+
+body {
+    font-family: 'Inter', sans-serif;
+    background: linear-gradient(rgba(248, 250, 252, 0.8), rgba(248, 250, 252, 0.8)), 
+                url('ewu.jpg') no-repeat center center fixed;
+    background-size: cover;
+}
+
+html.dark body {
+    background: linear-gradient(rgba(15, 23, 42, 0.92), rgba(15, 23, 42, 0.92)), 
+                url('ewu.jpg') no-repeat center center fixed;
+    background-size: cover;
+}
+
+.routine-table th, .routine-table td {
+    border: 1px solid #e2e8f0;
+    padding: 12px;
+    text-align: center;
+    min-width: 170px;
+}
+
+html.dark .routine-table th, html.dark .routine-table td {
+    border-color: #1e293b;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: #3b82f6;
+    border-radius: 10px;
+}
+
+@media print {
+    .no-print { display: none !important; }
+    body { background: white !important; }
+}
+/* আগের CSS ঠিক রেখে নিচের অংশটুকু যোগ করুন বা আপডেট করুন */
+
+.routine-table th, .routine-table td {
+    border: 1px solid #e2e8f0;
+    padding: 12px;
+    text-align: center;
+    /* মোবাইল রেসপন্সিভনেসের জন্য min-width অ্যাডজাস্ট */
+    min-width: 140px; 
+}
+
+/* মোবাইল ভিউতে স্ক্রলিং সহজ করার জন্য */
+@media (max-width: 768px) {
+    .routine-table th, .routine-table td {
+        min-width: 120px;
+        padding: 8px;
+        font-size: 12px;
+    }
+    .text-2xl { font-size: 1.25rem; }
+}
+/* পুরো ওয়েবসাইট এর টেক্সট সিলেক্ট করা বন্ধ */
+body {
+    -webkit-user-select: none; /* Safari */
+    -ms-user-select: none; /* IE 10 and IE 11 */
+    user-select: none; /* Standard syntax */
+}
+
+/* তবে ইনপুট বক্স বা নির্দিষ্ট জায়গায় টাইপ করার সুবিধা রাখার জন্য */
+input, textarea {
+    -webkit-user-select: text;
+    -ms-user-select: text;
+    user-select: text;
+}
+
+/* --- মোবাইল ভিউ এবং ইমেজ ক্যাপচার সমস্যার সমাধান --- */
+
+@media (max-width: 768px) {
+    /* মেইন কন্টেইনারের প্যাডিং কমানো যেন স্ক্রিনে বেশি জায়গা পায় */
+    main {
+        padding: 10px !important;
+    }
+
+    /* রুটিন কন্টেইনারের সাইজ মোবাইলের জন্য অপ্টিমাইজ করা */
+    #routineContainer {
+        padding: 15px !important;
+        border-radius: 1.5rem !important;
+        overflow-x: auto; /* মোবাইলে টেবিলটি যেন স্ক্রল করা যায় */
+    }
+
+    /* নাম, আইডি এবং সেমিস্টার সেকশন ছোট করা */
+    #disp-name, #disp-id, #disp-semester {
+        padding: 10px !important;
+        font-size: 14px !important;
+        border-radius: 12px !important;
+    }
+
+    /* টেবিলের ভেতরের কন্টেন্ট ছোট করা যেন ফোনে হিজিবিজি না লাগে */
+    .routine-table th, .routine-table td {
+        min-width: 100px !important; /* কলামের চওড়া কমানো */
+        padding: 6px !important;
+        font-size: 10px !important;
+    }
+
+    /* কোর্সের কোড এবং সেকশন বক্স ছোট করা */
+    .routine-table td div.bg-white, 
+    .routine-table td div.dark\:bg-slate-800 {
+        padding: 8px !important;
+        border-radius: 10px !important;
+    }
+
+    .routine-table td div.text-lg {
+        font-size: 12px !important; /* কোর্স কোড ফন্ট */
+    }
+
+    .routine-table td div.text-\[12px\] {
+        font-size: 9px !important; /* সেকশন ও রুম ফন্ট */
+    }
+}
+
+/* ইনপুট ফিল্ডে সিলেক্ট করার সুবিধা নিশ্চিত করা (যাতে টাইপ করতে সমস্যা না হয়) */
+input, textarea, [contenteditable="true"] {
+    -webkit-user-select: text !important;
+    -ms-user-select: text !important;
+    user-select: text !important;
+}

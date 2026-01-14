@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://EWU_Smart_Routine_Generator.vercel.app/sitemap.xml
