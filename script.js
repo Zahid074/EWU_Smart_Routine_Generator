@@ -23,13 +23,13 @@ function processExcelData(rows) {
     uniqueTimeSlots.clear();
     foundDays.clear();
     const coursesFound = new Set();
-
     let currentFullCode = "";
     let currentBaseCode = "";
     let currentSection = "-";
 
     rows.forEach((row) => {
         let rowStr = row.map(c => c ? c.toString().trim() : "").join(" ");
+        if (rowStr.toUpperCase().includes("DROPPED ON")) return;
 
         if (rowStr.includes("Name:")) {
             let nameMatch = rowStr.match(/Name:\s*(.*?)\s*ID#/i);
@@ -37,6 +37,7 @@ function processExcelData(rows) {
             let idMatch = rowStr.match(/ID#\s*([\d-]+)/i);
             if (idMatch) document.getElementById('disp-id').innerText = "ID#: " + idMatch[1].trim();
         }
+
         const semMatch = rowStr.match(/(Spring|Summer|Fall)\s*-\s*\d{4}/i);
         if (semMatch) document.getElementById('disp-semester').innerText = "Semester: " + semMatch[0].toUpperCase();
 
@@ -46,7 +47,6 @@ function processExcelData(rows) {
         if (courseMatch) {
             currentFullCode = courseMatch[1].trim();
             currentBaseCode = currentFullCode.replace(/\sLab/i, "").trim();
-            
             let courseIdx = row.findIndex(c => c && c.toString().includes(currentFullCode));
             if (courseIdx !== -1) {
                 for (let i = courseIdx + 1; i < row.length; i++) {
@@ -57,17 +57,33 @@ function processExcelData(rows) {
                     }
                 }
             }
-            coursesFound.add(currentBaseCode);
+            coursesFound.add(currentFullCode);
         }
 
         if (currentFullCode && timeMatch) {
             const days = timeMatch[1].toUpperCase();
             const time = timeMatch[2].toUpperCase().replace(/\s/g, '');
-            const roomMatch = rowStr.match(/\d{3}\s?\(.*?\)|AB\d-\d{3}|FUB-\d{3}/i);
-            const room = roomMatch ? roomMatch[0] : "TBA";
+            let room = "TBA";
+
+            // টাইম ইনডেক্স খুঁজে বের করার উন্নত পদ্ধতি
+            let timeIdx = row.findIndex(c => {
+                if (!c) return false;
+                let cellClean = c.toString().toUpperCase().replace(/\s/g, '');
+                return cellClean.includes(time);
+            });
+
+            // যদি টাইমের কলাম পাওয়া যায়, তবে তার পরের কলামগুলো থেকে রুম খোঁজা
+            if (timeIdx !== -1) {
+                for (let j = timeIdx + 1; j < row.length; j++) {
+                    let potentialRoom = row[j] ? row[j].toString().trim() : "";
+                    if (potentialRoom && !potentialRoom.includes(currentFullCode)) {
+                        room = potentialRoom;
+                        break;
+                    }
+                }
+            }
 
             uniqueTimeSlots.add(time);
-
             for (let char of days) {
                 if (dayMap[char]) {
                     foundDays.add(dayMap[char]);
@@ -83,7 +99,6 @@ function processExcelData(rows) {
             }
         }
     });
-
     renderTable();
     if (coursesFound.size > 0) showFacultyModal(Array.from(coursesFound));
 }
@@ -103,11 +118,9 @@ function renderTable() {
     const head = document.getElementById('time-header');
     head.innerHTML = `<th class="bg-blue-900 border-r border-blue-800 text-2xl p-6">Day / Time</th>`;
     sortedTimes.forEach(t => head.innerHTML += `<th class="text-sm font-black p-5 uppercase tracking-tighter">${t}</th>`);
-
     const body = document.getElementById('routineBody');
     body.innerHTML = "";
     const daysOrder = ["Saturday", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday"].filter(d => foundDays.has(d));
-
     daysOrder.forEach(day => {
         let row = `<tr><td class="bg-slate-100 dark:bg-slate-800 font-black text-blue-900 dark:text-blue-400 uppercase text-2xl p-6 border-r">${day}</td>`;
         sortedTimes.forEach(time => {
@@ -115,7 +128,7 @@ function renderTable() {
             if (matches.length > 0) {
                 let cellHtml = `<td class="bg-blue-50/30 dark:bg-blue-900/10 p-2">`;
                 matches.forEach(m => {
-                    const fac = facultyData[m.baseCode] ? `<div class="mt-2 bg-blue-600 text-white px-2 py-1 rounded text-[10px] font-bold block w-fit mx-auto">${facultyData[m.baseCode]}</div>` : "";
+                    const fac = facultyData[m.code] ? `<div class="mt-2 bg-blue-600 text-white px-2 py-1 rounded text-[10px] font-bold block w-fit mx-auto">${facultyData[m.code]}</div>` : "";
                     cellHtml += `
                         <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-md border border-blue-100 dark:border-slate-700 mb-2">
                             <div class="text-blue-900 dark:text-blue-300 font-black text-lg">${m.code}</div>
@@ -134,12 +147,34 @@ function renderTable() {
     document.getElementById('routineContainer').classList.remove('hidden');
 }
 
+function showFacultyModal(courseList) {
+    const container = document.getElementById('facultyInputs');
+    container.innerHTML = "";
+    courseList.sort().forEach(c => {
+        container.innerHTML += `
+        <div class="bg-slate-50 dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
+            <label class="block text-xs font-black text-blue-600 mb-1 uppercase">${c}</label>
+            <input type="text" placeholder="Faculty Initial" class="fac-in w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-2 rounded-lg text-sm" data-course="${c}">
+        </div>`;
+    });
+    document.getElementById('facultyModal').classList.remove('hidden');
+}
+
+function applyFaculty(isSkip = false) {
+    facultyData = {};
+    if (!isSkip) {
+        document.querySelectorAll('.fac-in').forEach(i => {
+            if (i.value) facultyData[i.dataset.course] = i.value.toUpperCase();
+        });
+    }
+    document.getElementById('facultyModal').classList.add('hidden');
+    renderTable();
+}
+
 function openEditModal() {
     const list = document.getElementById('editCourseList');
     list.innerHTML = "";
-    extractedCourses.forEach((c, index) => {
-        list.innerHTML += createCourseRow(c, index);
-    });
+    extractedCourses.forEach((c, index) => { list.innerHTML += createCourseRow(c, index); });
     document.getElementById('editModal').classList.remove('hidden');
 }
 
@@ -153,7 +188,7 @@ function createCourseRow(c, index) {
             <select class="ed-day p-2 rounded border dark:bg-slate-900 text-sm">
                 ${Object.values(dayMap).map(d => `<option value="${d}" ${d===c.activeDay?'selected':''}>${d}</option>`).join('')}
             </select>
-            <input type="text" value="${c.time}" placeholder="8:00AM-10:30AM" class="ed-time p-2 rounded border dark:bg-slate-900 text-sm">
+            <input type="text" value="${c.time}" placeholder="Time" class="ed-time p-2 rounded border dark:bg-slate-900 text-sm">
         </div>
         <button onclick="this.parentElement.remove()" class="bg-red-100 text-red-600 p-2 rounded-lg hover:bg-red-200">Remove</button>
     </div>`;
@@ -169,7 +204,6 @@ function saveEdits() {
     extractedCourses = [];
     uniqueTimeSlots.clear();
     foundDays.clear();
-
     rows.forEach(row => {
         const code = row.querySelector('.ed-code').value.toUpperCase();
         const time = row.querySelector('.ed-time').value.toUpperCase().replace(/\s/g, '');
@@ -191,73 +225,24 @@ function saveEdits() {
     document.getElementById('editModal').classList.add('hidden');
 }
 
-function showFacultyModal(courseList) {
-    const container = document.getElementById('facultyInputs');
-    container.innerHTML = "";
-    courseList.forEach(c => {
-        container.innerHTML += `<div class="bg-slate-50 dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700"><label class="block text-xs font-black text-blue-600 mb-1 uppercase">${c}</label><input type="text" placeholder="Faculty Initial" class="fac-in w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-2 rounded-lg text-sm" data-course="${c}"></div>`;
-    });
-    document.getElementById('facultyModal').classList.remove('hidden');
-}
-
-function applyFaculty(isSkip = false) {
-    facultyData = {};
-    if (!isSkip) {
-        document.querySelectorAll('.fac-in').forEach(i => {
-            if (i.value) facultyData[i.dataset.course] = i.value.toUpperCase();
-        });
-    }
-    document.getElementById('facultyModal').classList.add('hidden');
-    renderTable();
-}
-
 function downloadAsImage() {
     const routine = document.getElementById('routineContainer');
-    const htmlTag = document.documentElement;
-    
-    // ১. চেক করা হচ্ছে বর্তমানে ডার্ক মোড অন আছে কি না
-    const isDarkMode = htmlTag.classList.contains('dark');
-
-    // ২. ডাউনলোড করার সময় সাময়িকভাবে ডার্ক মোড অফ করা (সাদা করার জন্য)
-    if (isDarkMode) {
-        htmlTag.classList.remove('dark');
-    }
-
-    // ৩. মোবাইল ভিউ ঠিক রাখার জন্য উইথ সেট করা
     const originalStyle = routine.style.cssText;
-    routine.style.width = "1200px"; 
-    routine.style.minWidth = "1200px";
-
-    // ৪. ছবি ক্যাপচার করা
-    html2canvas(routine, { 
-        scale: 3, 
-        backgroundColor: "#ffffff", // ব্যাকগ্রাউন্ড সাদা নিশ্চিত করা
-        windowWidth: 1200,
-        ignoreElements: (el) => el.classList.contains('no-print') 
-    }).then(canvas => {
-        // ৫. ছবি তোলা শেষ হলে ডার্ক মোড আবার ফিরিয়ে আনা (যদি আগে অন ছিল)
-        if (isDarkMode) {
-            htmlTag.classList.add('dark');
-        }
-
-        // ৬. স্টাইল আগের মতো করে দেওয়া
+    routine.style.width = "1400px"; 
+    html2canvas(routine, { scale: 2, useCORS: true, backgroundColor: "#f8fafc" }).then(canvas => {
         routine.style.cssText = originalStyle;
-
         const a = document.createElement('a');
-        a.download = 'EWU_Smart_Routine.png';
+        a.download = 'My_EWU_Routine.png';
         a.href = canvas.toDataURL("image/png");
         a.click();
     });
 }
 
 document.addEventListener('contextmenu', event => event.preventDefault());
-
 document.onkeydown = function(e) {
     if (e.keyCode == 123) return false;
-    if (e.ctrlKey && e.shiftKey && e.keyCode == 'I'.charCodeAt(0)) return false;
-    if (e.ctrlKey && e.shiftKey && e.keyCode == 'J'.charCodeAt(0)) return false;
-    if (e.ctrlKey && e.keyCode == 'U'.charCodeAt(0)) return false;
-    if (e.ctrlKey && e.keyCode == 'S'.charCodeAt(0)) return false;
+    if (e.ctrlKey && e.shiftKey && (e.keyCode == 'I'.charCodeAt(0) || e.keyCode == 'J'.charCodeAt(0))) return false;
+    if (e.ctrlKey && (e.keyCode == 'U'.charCodeAt(0) || e.keyCode == 'S'.charCodeAt(0))) return false;
     if (e.ctrlKey && e.keyCode == 'C'.charCodeAt(0)) {
         if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') return false;
     }
